@@ -1,21 +1,76 @@
 use docker_api::Docker;
 use ds_code::run_py_script_in_container;
-use std::env::var;
+use serenity::framework::standard::macros::{command, group};
+use serenity::framework::standard::{CommandResult, StandardFramework};
+use serenity::model::prelude::Message;
+use serenity::prelude::{Context, EventHandler, GatewayIntents};
+use serenity::{async_trait, Client};
+use std::env;
 use std::error::Error;
+
+#[group]
+#[commands(run)]
+struct GeneralCommands;
+
+struct Handler;
+
+#[async_trait]
+impl EventHandler for Handler {}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let docker = Docker::new(var("DOCKER_HOST")?)?;
-    let python_script = "print(\"Hello World!\")
-i = 0
-while True:
-    print(i)
-    i += 1";
-    
-    println!(
-        "{}",
-        run_py_script_in_container(&docker, python_script).await?
-    );
+    let framework = StandardFramework::new()
+        .configure(|c| c.prefix("~"))
+        .group(&GENERALCOMMANDS_GROUP);
+
+    let token = env::var("DISCORD_TOKEN")?;
+    let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
+
+    let mut client = Client::builder(token, intents)
+        .event_handler(Handler)
+        .framework(framework)
+        .await?;
+
+    client.start().await?;
+
+    Ok(())
+}
+
+#[command]
+async fn run(ctx: &Context, msg: &Message) -> CommandResult {
+    let msg_content = msg.content.clone();
+    let splitted_msg: Vec<_> = msg_content.split("```").collect();
+
+    let user_code_block = splitted_msg.get(1);
+
+    if user_code_block.is_none() {
+        msg.reply(ctx, "Can not find code block.").await?;
+        return Ok(());
+    }
+
+    let lines: Vec<_> = user_code_block.unwrap().lines().collect();
+    let code_lang = lines.get(0);
+    let user_code = &lines[1..].join("\n");
+
+    // Running docker
+    let docker = Docker::new(env::var("DOCKER_HOST")?)?;
+
+    let code_output = run_py_script_in_container(&docker, user_code)
+        .await
+        .unwrap_or("Failed to process script.".to_string());
+
+    msg.reply(
+        ctx,
+        format!(
+            "Code Output (First 1900 characters):\n```\n{}\n```",
+            if code_output.len() > 1900 {
+                &code_output[..1900]
+            } else {
+                &code_output
+            }
+        ),
+    )
+    .await?;
 
     Ok(())
 }
