@@ -1,5 +1,5 @@
 use docker_api::Docker;
-use ds_code::run_py_script_in_container;
+use ds_code::run_user_code;
 use serenity::framework::standard::macros::{command, group};
 use serenity::framework::standard::{CommandResult, StandardFramework};
 use serenity::model::prelude::Message;
@@ -55,16 +55,20 @@ async fn run(ctx: &Context, msg: &Message) -> CommandResult {
     // Running docker
     let docker = Docker::new(env::var("DOCKER_HOST")?)?;
 
-    let code_output = run_py_script_in_container(&docker, user_code)
-        .await
-        .unwrap_or("Failed to process script.".to_string());
+    let code_output = run_user_code(&docker, user_code, code_lang.unwrap_or(&"UNKNOWN")).await;
+
+    if code_output.is_err() {
+        println!("{:?}", code_output);
+    }
+
+    let code_output = code_output.unwrap_or("Failed to process".to_string());
 
     msg.reply(
         ctx,
         format!(
-            "Code Output (First 1900 characters):\n```\n{}\n```",
-            if code_output.len() > 1900 {
-                &code_output[..1900]
+            "Code Output (First 1950 characters):\n```\n{}\n```",
+            if code_output.len() > 1950 {
+                &code_output[..1950]
             } else {
                 &code_output
             }
