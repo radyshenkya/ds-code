@@ -16,6 +16,22 @@ After that the bot will reply on your message with output of this code like this
 
 ![image](https://user-images.githubusercontent.com/52829258/215334727-d97bf057-c61e-443d-a4b8-339c0c344e3d.png)
 
+**By default all user programs is running with 2 seconds timeout**
+
+## Default supported languages
+Default supported languages is:
+* `python` or `py` - python3
+* `rust` or `rs` - uses `rustc` to compile code
+* `javascript` or `js` - uses `nodejs`
+* `c` - uses `gcc`
+* `cpp` - uses `g++`
+* `lua` - uses `lua5.3`
+
+You can extend this list by modificating docker image and adding keys to `src/languages.rs` file.
+
+## Docker container settings
+Docker image is built on top of [debian](https://hub.docker.com/_/debian) image.
+Container runs without internet (it is connected to `none` network)
 
 ## Installation
 Firstly, you need to install **[docker](https://www.docker.com/)** and **[rust](https://www.rust-lang.org/)**.
