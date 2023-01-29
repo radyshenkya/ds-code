@@ -57,17 +57,10 @@ pub async fn run_user_code(
                 .auto_remove(true)
                 .attach_stderr(true)
                 .attach_stdout(true)
+                .network_mode("none")
                 .command(exec_args)
                 .build(),
         )
-        .await
-        .map_err(|e| RunningError { msg: e.to_string() })?;
-
-    // Turning off container internet
-    let network = get_usercode_network(docker).await?;
-
-    network
-        .connect(&ContainerConnectionOpts::builder(new_container.id()).build())
         .await
         .map_err(|e| RunningError { msg: e.to_string() })?;
 

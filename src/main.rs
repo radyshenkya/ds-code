@@ -1,4 +1,5 @@
 use docker_api::Docker;
+use dotenv::dotenv;
 use ds_code::run_user_code;
 use serenity::framework::standard::macros::{command, group};
 use serenity::framework::standard::{CommandResult, StandardFramework};
@@ -19,6 +20,8 @@ impl EventHandler for Handler {}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    dotenv().ok();
+
     let framework = StandardFramework::new()
         .configure(|c| c.prefix("~"))
         .group(&GENERALCOMMANDS_GROUP);
