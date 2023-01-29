@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .configure(|c| c.prefix("~"))
         .group(&GENERALCOMMANDS_GROUP);
 
-    let token = env::var("DISCORD_TOKEN")?;
+    let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN needs to be set.");
     let intents = GatewayIntents::non_privileged() | GatewayIntents::MESSAGE_CONTENT;
 
     let mut client = Client::builder(token, intents)
@@ -64,16 +64,20 @@ async fn run(ctx: &Context, msg: &Message) -> CommandResult {
         println!("{:?}", code_output);
     }
 
-    let code_output = code_output.unwrap_or("Failed to process".to_string());
-
     msg.reply(
         ctx,
         format!(
             "Code Output (First 1950 characters):\n```\n{}\n```",
-            if code_output.len() > 1950 {
-                &code_output[..1950]
+            if code_output.is_ok() {
+                let code_output = code_output.unwrap();
+
+                if code_output.len() > 1950 {
+                    String::from(&code_output[..1950])
+                } else {
+                    String::from(&code_output)
+                }
             } else {
-                &code_output
+                format!("Failed to process. {:?}", code_output)
             }
         ),
     )

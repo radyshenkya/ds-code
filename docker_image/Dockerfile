@@ -22,5 +22,8 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN curl -fsSL https://deb.nodesource.com/setup_19.x | bash - && \
     apt-get install -y nodejs
 
+# lua
+RUN apt install lua5.3
+
 # scripts
 COPY to_copy /

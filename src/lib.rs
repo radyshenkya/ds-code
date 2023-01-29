@@ -1,29 +1,14 @@
+mod languages;
 use std::sync::{Arc, Mutex};
 
 use derive_more::{Display, Error};
-use docker_api::{
-    opts::{ContainerConnectionOpts, ContainerCreateOpts, NetworkCreateOpts, NetworkListOpts},
-    Docker, Network,
-};
+use docker_api::{opts::ContainerCreateOpts, Docker};
 use futures::StreamExt;
-use phf::phf_map;
+use languages::USER_CODE_LANGUAGES_EXEC_ARGS;
 
 const DOCKER_IMAGE_NAME: &str = "ds-code-user-code";
-const DOCKER_NETWORK_NAME: &str = "ds-code-user-code-net";
 
-const USER_CODE_LANGUAGES_EXEC_ARGS: phf::Map<&'static str, (&'static str, &'static str)> = phf_map! {
-    // "LANG_CODE" => ("EXEC FUNCS", "NAME_FILE")
-    "python" => ("timeout 2s /usr/bin/python3 /user_code.py", "/user_code.py"),
-    "py" => ("timeout 2s /usr/bin/python3 /user_code.py", "/user_code.py"),
-    "rust" => ("/scripts/run_rust.sh", "/user_code.rs"),
-    "rs" => ("/scripts/run_rust.sh", "/user_code.rs"),
-    "javascript" => ("timeout 2s /usr/bin/node /user_code.js", "/user_code.js"),
-    "js" => ("timeout 2s /usr/bin/node /user_code.js", "/user_code.js"),
-    "c" => ("/scripts/run_c.sh", "/user_code.c"),
-    "cpp" => ("/scripts/run_cpp.sh", "/user_code.cpp")
-};
-
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display, Error, Clone)]
 pub struct RunningError {
     pub msg: String,
 }
@@ -111,37 +96,4 @@ pub async fn run_user_code(
     let locked_output = output.lock().unwrap();
     let output = String::from(locked_output.as_str());
     Ok(output)
-}
-
-async fn get_usercode_network(docker: &Docker) -> Result<Network, RunningError> {
-    let networks = docker
-        .networks()
-        .list(&NetworkListOpts::builder().build())
-        .await
-        .map_err(|e| RunningError { msg: e.to_string() })?;
-
-    // Searching network
-    let network = networks
-        .into_iter()
-        .find(|network| network.name == Some(String::from(DOCKER_NETWORK_NAME)));
-
-    if network.is_none() {
-        // Creating new network
-        let new_network = docker
-            .networks()
-            .create(
-                &NetworkCreateOpts::builder(String::from(DOCKER_NETWORK_NAME))
-                    .attachable(true)
-                    .internal(true)
-                    .build(),
-            )
-            .await
-            .map_err(|e| RunningError { msg: e.to_string() })?;
-
-        return Ok(new_network);
-    }
-    let network = network.unwrap();
-    let network = docker.networks().get(network.id.unwrap());
-
-    Ok(network)
 }
