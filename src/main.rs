@@ -67,12 +67,15 @@ async fn run(ctx: &Context, msg: &Message) -> CommandResult {
     msg.reply(
         ctx,
         format!(
-            "Code Output (First 1950 characters):\n```\n{}\n```",
+            "```\n{}\n```",
             if code_output.is_ok() {
                 let code_output = code_output.unwrap();
 
-                if code_output.len() > 1950 {
-                    String::from(&code_output[..1950])
+                if code_output.len() > 1900 {
+                    format!(
+                        "{}\n...output is too big (printed first 1900 chars)",
+                        &code_output[..1900]
+                    )
                 } else {
                     String::from(&code_output)
                 }

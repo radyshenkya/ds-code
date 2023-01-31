@@ -93,6 +93,7 @@ pub async fn run_user_code(
         };
     }
 
+    let _ = new_container.delete().await;
     let locked_output = output.lock().unwrap();
     let output = String::from(locked_output.as_str());
     Ok(output)
